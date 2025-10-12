@@ -2,27 +2,17 @@ import SwiftUI
 
 struct DetailView: View {
   
+  let movie: MovieModel
   @State var comment: String = ""
   
   var body: some View {
     VStack{
-      
-      HStack{
-        Button(action: {
-          
-        }) {
-          Image(systemName: "chevron.left").tint(.black)
-        }
-        Spacer()
-        Text("파묘").font(.title2).fontWeight(.semibold)
-        Spacer()
-      }.padding(.horizontal)
       ScrollView{
         VStack{
           Image("Sample3").resizable().scaledToFit().padding(.vertical, 16)
           
-          Text("소개글소개글소개글소개글소개글소개글소개글소개글소개글소개글소개글소개글소개글소개글소개글").font(.title2).padding(.bottom, 8)
-          Text("개봉일: 2020-02-11").font(.title2)
+          Text(movie.overview).font(.title2).padding(.bottom, 8)
+          Text("개봉일: \(movie.releaseDate)").font(.title2)
           
         }
         
@@ -49,10 +39,13 @@ struct DetailView: View {
         
         Spacer()
       }.padding(.horizontal, 16)
-    }
+    }.navigationTitle(movie.title).navigationBarTitleDisplayMode(.inline)
   }
 }
 
 #Preview {
-  DetailView()
+  DetailView(movie: MovieModel(id: 1, title: "기생충",
+                     posterPath: "Sample3",
+                     overview: "가난한 가족이 부유한 집에 침투하면서 벌어지는 이야기",
+                     releaseDate: "2019-05-30"))
 }
