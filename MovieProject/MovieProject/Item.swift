@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Item {
+final class Comment {
     var timestamp: Date
     
     init(timestamp: Date) {
