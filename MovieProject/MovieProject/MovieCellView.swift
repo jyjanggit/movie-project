@@ -1,10 +1,3 @@
-//
-//  MovieCellView.swift
-//  MovieProject
-//
-//  Created by JY Jang on 10/12/25.
-//
-
 import SwiftUI
 
 struct MovieCellView: View {
@@ -12,16 +5,37 @@ struct MovieCellView: View {
   
   var body: some View {
     HStack(spacing: 12) {
-      Image(movie.posterPath).resizable().frame(width: 100, height: 130)
+      
+      AsyncImage(url: URL(string: movie.posterURL)) { phase in
+        switch phase {
+        case .success(let image):
+          image
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+        case .failure:
+          Image(systemName: "photo")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .foregroundStyle(.gray)
+        case .empty:
+          ProgressView()
+        @unknown default:
+          EmptyView()
+        }
+      }
+      .frame(width: 100, height: 130)
+      .clipped()
+      
+      
       VStack(alignment: .leading) {
         Text(movie.title).font(.title2).bold().padding(.bottom, 8)
-        Text(movie.overview).font(.callout).padding(.bottom, 8)
+        Text(movie.overview)
+          .font(.callout)
+          .padding(.bottom, 8)
+          .lineLimit(3)
         Text("개봉일: \(movie.releaseDate)").font(.callout)
-      }.padding(.leading, 12)
-    }.padding(12).lineLimit(1)
+      }
+      .padding(.leading, 12)
+    }
   }
-}
-
-#Preview {
-  MovieCellView(movie: MovieModel(id: 1, title: "파묘", posterPath: "poster", overview: "ddd", releaseDate: "2023-11-11"))
 }
