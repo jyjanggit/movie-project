@@ -1,40 +1,29 @@
 import SwiftUI
+import SwiftData
 
 struct MyCommentView: View {
   
-  var items: [Item] = [Item(title: "케이팝데몬헌터스",
-                            comment: "재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다"),
-                       Item(title: "케이팝데몬헌터스",
-                            comment: "재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다"),
-                       Item(title: "케이팝데몬헌터스",
-                            comment: "재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다"),
-                       Item(title: "케이팝데몬헌터스",
-                            comment: "재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다"),
-                       Item(title: "케이팝데몬헌터스",
-                            comment: "재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다"),
-                       Item(title: "케이팝데몬헌터스",
-                            comment: "재미있는 영화였다 어쩌구 저쩌구 줄이 길게 나올때는 이렇게 된다"),
-  ]
+  @Environment(\.modelContext) private var modelContext
   
+  @StateObject private var viewModel: MyCommentViewModel
   
-  struct Item: Identifiable {
-    let id = UUID()
-    var title: String
-    var comment: String
+  init(viewModel: MyCommentViewModel) {
+    _viewModel = StateObject(wrappedValue: viewModel)
   }
   
   var body: some View {
     NavigationStack{
       List {
-        ForEach(items) { item in
-          HStack(spacing: 12) {
-            VStack(alignment: .leading) {
-              Text(item.title).font(.title2).bold().padding(.bottom, 8)
-              Text(item.comment).font(.callout).padding(.bottom, 8)
-            }.padding(.horizontal, 12)
+        ForEach(viewModel.comments) { comment in
+          
+          VStack(alignment: .leading, spacing: 12) {
+            Text(comment.movieTitle).font(.title2).bold()
+            Text(comment.userComment).font(.callout)
+          }.padding(.vertical, 12).alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
+            return -viewDimensions.width
           }
         }
-      }.listStyle(.plain)
+      }.listStyle(.plain).listRowSeparator(.hidden)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItem(placement: .principal) {
@@ -43,14 +32,15 @@ struct MyCommentView: View {
                 .minimumScaleFactor(0.9)
             }
           }
+        }
+        .onAppear {
           
-          
+          viewModel.loadComments()
         }
     }
-    
   }
 }
 
-#Preview {
-  MyCommentView()
-}
+//#Preview {
+//  MyCommentView()
+//}

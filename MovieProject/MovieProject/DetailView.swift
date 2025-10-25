@@ -1,9 +1,18 @@
 import SwiftUI
+import SwiftData
 
 struct DetailView: View {
   
+  @Environment(\.modelContext) private var modelContext
+  
   let movie: MovieModel
-  @State var comment: String = ""
+  
+  @StateObject private var viewModel: CommentInputViewModel
+  
+  init(movie: MovieModel, viewModel: CommentInputViewModel) {
+    self.movie = movie
+    _viewModel = StateObject(wrappedValue: viewModel)
+  }
   
   var body: some View {
     VStack{
@@ -35,18 +44,22 @@ struct DetailView: View {
           
           Text("개봉일: \(movie.releaseDate)")
             .font(.title2)
-            .multilineTextAlignment(.leading) // 텍스트 정렬을 왼쪽으로
-            .frame(maxWidth: .infinity, alignment: .leading) // 좌측 정렬을 위해 추가
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
           
         }
         
         ZStack(alignment: .topLeading) {
-          TextEditor(text: $comment)
+          TextEditor(text: $viewModel.commentText)
+            .scrollContentBackground(.hidden)
+            .background(.clear)
           
-          if comment.isEmpty {
+          
+          if viewModel.commentText.isEmpty {
             Text("감상평 내용을 입력하세요")
               .foregroundColor(.gray)
-              .padding(10)
+              .padding(8)
+              .font(.body)
           }
           
         }
@@ -54,29 +67,47 @@ struct DetailView: View {
         
         
         Button {
-          print("작성 버튼")
+          viewModel.save(movie: movie)
         } label: {
-          Text("감상평 작성").frame(width: 320, height: 42).foregroundStyle(.white).background(.blue).clipShape(RoundedRectangle(cornerRadius: 20))
+          if viewModel.isSaving {
+            ProgressView().progressViewStyle(.circular).frame(width: 320, height: 42)
+          } else {
+            Text("감상평 작성").frame(width: 320, height: 42).foregroundStyle(.white).background(.blue).clipShape(RoundedRectangle(cornerRadius: 20))
+          }
         }
         
+        .alert("알림", isPresented: $viewModel.saveSuccess) {
+          Button("확인", role: .cancel) { }
+        } message: {
+          Text("감상평이 성공적으로 저장되었습니다.")
+        }
+        
+        if let error = viewModel.saveError {
+          Text(error).foregroundColor(.red)
+        }
         
         Spacer()
       }
       .padding(.horizontal, 16)
       
+      .onAppear {
+        
+        viewModel.loadComment(movieID: movie.id)
+        
+        
+      }
     }
-    // NavigationTitle을 사용하여 제목 표시
     .navigationTitle(movie.title)
     .navigationBarTitleDisplayMode(.inline)
   }
 }
 
-#Preview {
-  DetailView(movie: MovieModel(
-    id: 1,
-    title: "기생충",
-    posterURL: "https://image.tmdb.org/t/p/w500/k0gU48B77c4yVb6Y710H392Ua3v.jpg",
-    overview: "가난한 가족이 부유한 집에 침투하면서 벌어지는 이야기",
-    releaseDate: "2019-05-30"
-  ))
-}
+//#Preview {
+//  DetailView(movie: MovieModel(
+//    id: 1,
+//    title: "기생충",
+//    posterURL: "https://image.tmdb.org/t/p/w500/k0gU48B77c4yVb6Y710H392Ua3v.jpg",
+//    overview: "가난한 가족이 부유한 집에 침투하면서 벌어지는 이야기",
+//    releaseDate: "2019-05-30"
+//  ))
+//}
