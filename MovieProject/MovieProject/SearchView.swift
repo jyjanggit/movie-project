@@ -1,7 +1,9 @@
 import SwiftUI
+import SwiftData
 
 struct SearchView: View {
   
+  @Environment(\.modelContext) private var modelContext
   @StateObject var viewModel = MovieViewModel()
   @Binding var tabIndex: Int
   
@@ -26,7 +28,9 @@ struct SearchView: View {
           
           
           NavigationLink {
-            DetailView(movie: item)
+            let repository = CommentRepositoryImpl(modelContext: modelContext)
+            let detailViewModel = CommentInputViewModel(repository: repository)
+            DetailView(movie: item, viewModel:detailViewModel)
           } label: {
             MovieCellView(movie: item)
           }

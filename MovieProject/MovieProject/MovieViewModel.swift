@@ -1,6 +1,7 @@
 import Foundation
 import Alamofire
 import SwiftUI
+import SwiftData
 
 struct MovieSearchResult: Codable {
   let id: Int
@@ -48,7 +49,11 @@ protocol MovieSearchRepository: AnyObject {
   func searchMovies<T: Decodable>(query: String, completion: @escaping (Result<T, NetworkError>) -> Void)
 }
 
-
+protocol CommentRepository: AnyObject {
+  func saveComment(comment: Comment, completion: @escaping (Result<Void, Error>) -> Void)
+  func fetchComment(by movieID: Int) -> Comment?
+  func fetchAllComments() -> [Comment]
+}
 
 final class MovieNetworking: MovieSearchRepository {
   
@@ -142,3 +147,129 @@ final class MovieViewModel: ObservableObject {
 
 
 
+final class CommentRepositoryImpl: CommentRepository {
+  
+  private let modelContext: ModelContext
+  
+  init(modelContext: ModelContext) {
+    self.modelContext = modelContext
+  }
+  
+  func saveComment(comment: Comment, completion: @escaping (Result<Void, Error>) -> Void) {
+    Task { @MainActor in
+      do {
+        let existingComment = self.fetchComment(by: comment.movieID)
+        
+        if comment.userComment.isEmpty {
+          if let target = existingComment {
+            self.modelContext.delete(target)
+            try self.modelContext.save()
+          }
+          return completion(.success(()))
+        }
+        
+        if let target = existingComment {
+          target.userComment = comment.userComment
+          target.timestamp = Date()
+        } else {
+          self.modelContext.insert(comment)
+        }
+        
+        try self.modelContext.save()
+        completion(.success(()))
+      } catch {
+        completion(.failure(error))
+      }
+    }
+  }
+  
+  func fetchComment(by movieID: Int) -> Comment? {
+    do {
+      let predicate = #Predicate<Comment> { $0.movieID == movieID }
+      var descriptor = FetchDescriptor(predicate: predicate)
+      descriptor.sortBy = [SortDescriptor(\Comment.timestamp, order: .reverse)]
+      
+      let comments = try modelContext.fetch(descriptor)
+      return comments.first
+    } catch {
+      print("감상평 조회 실패: \(error)")
+      return nil
+    }
+  }
+  
+  func fetchAllComments() -> [Comment] {
+    do {
+      let predicate = #Predicate<Comment> { !$0.userComment.isEmpty }
+      let descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
+      return try modelContext.fetch(descriptor)
+    } catch {
+      print("모든 감상평 조회 실패: \(error)")
+      return []
+    }
+  }
+  
+}
+//enum CommentError: Error {
+//  case contextError
+//  case saveError
+//}
+final class CommentInputViewModel: ObservableObject {
+  
+  private let repository: CommentRepository
+  
+  @Published var isSaving = false
+  @Published var saveSuccess = false
+  @Published var saveError: String?
+  @Published var commentText: String = ""
+  
+  
+  init(repository: CommentRepository) {
+    self.repository = repository
+  }
+  
+  func save(movie: MovieModel) {
+    guard !self.commentText.isEmpty else {
+      self.saveError = "감상평 내용을 입력해주세요."
+      return
+    }
+    
+    isSaving = true
+    saveSuccess = false
+    saveError = nil
+    
+    let newComment = Comment(
+      movieID: movie.id,
+      movieTitle: movie.title,
+      moviePosterURL: movie.posterURL,
+      releaseDate: movie.releaseDate,
+      userComment: self.commentText,
+      timestamp: Date()
+    )
+    
+
+    
+    repository.saveComment(comment: newComment) { [weak self] result in
+      DispatchQueue.main.async {
+        guard let self = self else { return }
+        self.isSaving = false
+        
+        switch result {
+        case .success:
+          self.saveSuccess = true
+          
+        case .failure(let error):
+          self.saveError = "저장 실패: \(error.localizedDescription)"
+        }
+      }
+    }
+  }
+  
+  func loadComment(movieID: Int) {
+    
+    if let commentData = repository.fetchComment(by: movieID) {
+      self.commentText = commentData.userComment
+    } else {
+      self.commentText = ""
+    }
+  }
+}
