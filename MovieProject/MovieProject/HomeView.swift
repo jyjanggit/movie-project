@@ -7,7 +7,7 @@ struct HomeView: View {
   @State var tabIndex = 0
   
   private var myCommentViewModel: MyCommentViewModel {
-    let repository = CommentRepositoryImpl(modelContext: modelContext)
+    let repository = CommentFetchAllRepositoryImpl(modelContext: modelContext)
     return MyCommentViewModel(repository: repository)
   }
   

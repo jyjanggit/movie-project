@@ -33,13 +33,11 @@ struct MovieResponse: Codable {
 
 enum NetworkError: Error {
   case networkingError
-  //case dataError
   case parseError
   
   var localizedDescription: String {
     switch self {
     case .networkingError: return "네트워크 연결에 문제가 있습니다."
-      //case .dataError: return "데이터를 불러오는 데 실패했습니다."
     case .parseError: return "데이터 형식을 해석하는 데 실패했습니다."
     }
   }
@@ -260,7 +258,6 @@ final class CommentInputViewModel: ObservableObject {
   }
   
   func loadComment(movieID: Int) {
-    
     if let commentData = repository.fetchComment(by: movieID) {
       self.commentText = commentData.userComment
     } else {

@@ -38,7 +38,6 @@ final class MyCommentViewModel: ObservableObject {
   }
   
 
-  
   func loadComments() {
     self.comments = repository.fetchAllComments()
   }
