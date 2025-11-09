@@ -50,9 +50,9 @@ protocol MovieSearchRepository: AnyObject {
 }
 
 protocol CommentRepository: AnyObject {
-  func saveComment(comment: Comment, completion: @escaping (Result<Void, Error>) -> Void)
-  func fetchComment(by movieID: Int) -> Comment?
-  func fetchAllComments() -> [Comment]
+  func saveComment(comment: CommentModel, completion: @escaping (Result<Void, Error>) -> Void)
+  func fetchComment(by movieID: Int) -> CommentModel?
+  func fetchAllComments() -> [CommentModel]
 }
 
 final class MovieNetworking: MovieSearchRepository {
@@ -155,7 +155,7 @@ final class CommentRepositoryImpl: CommentRepository {
     self.modelContext = modelContext
   }
   
-  func saveComment(comment: Comment, completion: @escaping (Result<Void, Error>) -> Void) {
+  func saveComment(comment: CommentModel, completion: @escaping (Result<Void, Error>) -> Void) {
     Task { @MainActor in
       do {
         let existingComment = self.fetchComment(by: comment.movieID)
@@ -183,11 +183,11 @@ final class CommentRepositoryImpl: CommentRepository {
     }
   }
   
-  func fetchComment(by movieID: Int) -> Comment? {
+  func fetchComment(by movieID: Int) -> CommentModel? {
     do {
-      let predicate = #Predicate<Comment> { $0.movieID == movieID }
+      let predicate = #Predicate<CommentModel> { $0.movieID == movieID }
       var descriptor = FetchDescriptor(predicate: predicate)
-      descriptor.sortBy = [SortDescriptor(\Comment.timestamp, order: .reverse)]
+      descriptor.sortBy = [SortDescriptor(\CommentModel.timestamp, order: .reverse)]
       
       let comments = try modelContext.fetch(descriptor)
       return comments.first
@@ -197,9 +197,9 @@ final class CommentRepositoryImpl: CommentRepository {
     }
   }
   
-  func fetchAllComments() -> [Comment] {
+  func fetchAllComments() -> [CommentModel] {
     do {
-      let predicate = #Predicate<Comment> { !$0.userComment.isEmpty }
+      let predicate = #Predicate<CommentModel> { !$0.userComment.isEmpty }
       let descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
       return try modelContext.fetch(descriptor)
     } catch {
@@ -237,7 +237,7 @@ final class CommentInputViewModel: ObservableObject {
     saveSuccess = false
     saveError = nil
     
-    let newComment = Comment(
+    let newComment = CommentModel(
       movieID: movie.id,
       movieTitle: movie.title,
       moviePosterURL: movie.posterURL,

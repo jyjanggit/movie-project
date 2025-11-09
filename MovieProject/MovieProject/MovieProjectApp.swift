@@ -12,7 +12,7 @@ import SwiftData
 struct MovieProjectApp: App {
   var sharedModelContainer: ModelContainer = {
     let schema = Schema([
-      Comment.self,
+      CommentModel.self,
     ])
     let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
     

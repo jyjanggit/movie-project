@@ -56,6 +56,6 @@ struct SearchView: View {
   }
 }
 
-#Preview {
-  SearchView(tabIndex: .constant(0))
-}
+//#Preview {
+//  SearchView(tabIndex: .constant(0))
+//}

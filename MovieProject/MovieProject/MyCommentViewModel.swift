@@ -6,7 +6,7 @@ final class MyCommentViewModel: ObservableObject {
   
   private let repository: CommentRepository
   
-  @Published var comments: [Comment] = []
+  @Published var comments: [CommentModel] = []
   
   init(repository: CommentRepository) {
     self.repository = repository
