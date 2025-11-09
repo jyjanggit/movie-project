@@ -17,11 +17,11 @@ struct MyCommentView: View {
         ForEach(viewModel.comments) { comment in
           
           VStack(alignment: .leading, spacing: 12) {
-            Text(comment.movieTitle).font(.title2).bold()
-            Text(comment.userComment).font(.callout)
+            Text(comment.movieTitle).font(.title2).bold().accessibilityAddTraits(.isHeader)
+            Text(comment.userComment).font(.callout).accessibilityLabel("감상평 내용: \(comment.userComment)")
           }.padding(.vertical, 12).alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
             return -viewDimensions.width
-          }
+          }.accessibilityElement(children: .combine)
         }
       }.listStyle(.plain).listRowSeparator(.hidden)
         .navigationBarTitleDisplayMode(.inline)

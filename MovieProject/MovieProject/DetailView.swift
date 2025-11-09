@@ -34,6 +34,7 @@ struct DetailView: View {
             }
           }
           .scaledToFit()
+          .accessibilityLabel("\(movie.title) 영화의 포스터입니다.")
           .padding(.vertical, 16)
           
           Text(movie.overview)
@@ -41,6 +42,7 @@ struct DetailView: View {
             .padding(.bottom, 8)
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel("영화 줄거리: \(movie.overview)")
           
           Text("개봉일: \(movie.releaseDate)")
             .font(.title2)
@@ -63,7 +65,7 @@ struct DetailView: View {
           }
           
         }
-        .frame(height: 200)
+        .frame(height: 200).accessibilityHint("영화 감상평을 입력하거나 수정하세요.")
         
         
         Button {
@@ -74,7 +76,7 @@ struct DetailView: View {
           } else {
             Text("감상평 작성").frame(width: 320, height: 42).foregroundStyle(.white).background(.blue).clipShape(RoundedRectangle(cornerRadius: 20))
           }
-        }
+        }.accessibilityHint("입력된 내용을 저장하거나, 내용을 비우면 감상평이 삭제됩니다.")
         
         .alert("알림", isPresented: $viewModel.saveSuccess) {
           Button("확인", role: .cancel) { }
@@ -98,6 +100,7 @@ struct DetailView: View {
       }
     }
     .navigationTitle(movie.title)
+    .accessibilityAddTraits(.isHeader)
     .navigationBarTitleDisplayMode(.inline)
   }
 }
