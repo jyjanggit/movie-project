@@ -34,7 +34,6 @@ struct MyCommentView: View {
           }
         }
         .onAppear {
-          
           viewModel.loadComments()
         }
     }

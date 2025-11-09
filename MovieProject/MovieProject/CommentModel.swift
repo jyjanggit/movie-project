@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Comment {
+final class CommentModel {
   var movieID: Int
   var movieTitle: String
   var moviePosterURL: String

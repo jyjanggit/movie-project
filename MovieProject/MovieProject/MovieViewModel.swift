@@ -33,13 +33,11 @@ struct MovieResponse: Codable {
 
 enum NetworkError: Error {
   case networkingError
-  case dataError
   case parseError
   
   var localizedDescription: String {
     switch self {
     case .networkingError: return "네트워크 연결에 문제가 있습니다."
-    case .dataError: return "데이터를 불러오는 데 실패했습니다."
     case .parseError: return "데이터 형식을 해석하는 데 실패했습니다."
     }
   }
@@ -50,9 +48,8 @@ protocol MovieSearchRepository: AnyObject {
 }
 
 protocol CommentRepository: AnyObject {
-  func saveComment(comment: Comment, completion: @escaping (Result<Void, Error>) -> Void)
-  func fetchComment(by movieID: Int) -> Comment?
-  func fetchAllComments() -> [Comment]
+  func saveComment(comment: CommentModel, completion: @escaping (Result<Void, Error>) -> Void)
+  func fetchComment(by movieID: Int) -> CommentModel?
 }
 
 final class MovieNetworking: MovieSearchRepository {
@@ -76,7 +73,7 @@ final class MovieNetworking: MovieSearchRepository {
       .responseDecodable(of: T.self) { response in
         
         if let error = response.error {
-          print("Alamofire Request Error: \(error.localizedDescription)")
+          print("Alamofire 요청 에러: \(error.localizedDescription)")
           return completion(.failure(.networkingError))
         }
         
@@ -97,7 +94,7 @@ final class MovieViewModel: ObservableObject {
   private let repository: any MovieSearchRepository
   
   
-  
+  // 변경되면 ui 갱신되는 변수들
   @Published var movies: [MovieModel] = []
   @Published var searchText: String = ""
   @Published var isLoading = false
@@ -110,6 +107,7 @@ final class MovieViewModel: ObservableObject {
   func searchButtonTapped() {
     let query = self.searchText
     
+    // 비었으면 종료
     guard !query.isEmpty else {
       movies = []
       errorMessage = nil
@@ -121,13 +119,13 @@ final class MovieViewModel: ObservableObject {
     
     repository.searchMovies(query: query) { [weak self] (result: Result<MovieResponse, NetworkError>) in
       DispatchQueue.main.async {
-        guard let self = self else { return }
+        guard let self else { return }
         
         self.isLoading = false
         
         switch result {
         case .success(let response):
-          self.movies = response.results.map { MovieModel(from: $0) }
+          self.movies = response.results.map { result in MovieModel(from: result) }
           
           if self.movies.isEmpty {
             self.errorMessage = "검색 결과가 없습니다."
@@ -155,11 +153,12 @@ final class CommentRepositoryImpl: CommentRepository {
     self.modelContext = modelContext
   }
   
-  func saveComment(comment: Comment, completion: @escaping (Result<Void, Error>) -> Void) {
+  func saveComment(comment: CommentModel, completion: @escaping (Result<Void, Error>) -> Void) {
     Task { @MainActor in
       do {
         let existingComment = self.fetchComment(by: comment.movieID)
         
+        // 삭제
         if comment.userComment.isEmpty {
           if let target = existingComment {
             self.modelContext.delete(target)
@@ -168,12 +167,14 @@ final class CommentRepositoryImpl: CommentRepository {
           return completion(.success(()))
         }
         
+        // 수정
         if let target = existingComment {
           target.userComment = comment.userComment
           target.timestamp = Date()
-        } else {
+        } else { // 데이터가 없으면 새로 저장
           self.modelContext.insert(comment)
         }
+        
         
         try self.modelContext.save()
         completion(.success(()))
@@ -183,11 +184,11 @@ final class CommentRepositoryImpl: CommentRepository {
     }
   }
   
-  func fetchComment(by movieID: Int) -> Comment? {
+  func fetchComment(by movieID: Int) -> CommentModel? {
     do {
-      let predicate = #Predicate<Comment> { $0.movieID == movieID }
+      let predicate = #Predicate<CommentModel> { movie in movie.movieID == movieID }
       var descriptor = FetchDescriptor(predicate: predicate)
-      descriptor.sortBy = [SortDescriptor(\Comment.timestamp, order: .reverse)]
+      descriptor.sortBy = [SortDescriptor(\CommentModel.timestamp, order: .reverse)]
       
       let comments = try modelContext.fetch(descriptor)
       return comments.first
@@ -197,25 +198,17 @@ final class CommentRepositoryImpl: CommentRepository {
     }
   }
   
-  func fetchAllComments() -> [Comment] {
-    do {
-      let predicate = #Predicate<Comment> { !$0.userComment.isEmpty }
-      let descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
-      return try modelContext.fetch(descriptor)
-    } catch {
-      print("모든 감상평 조회 실패: \(error)")
-      return []
-    }
-  }
   
 }
-//enum CommentError: Error {
-//  case contextError
-//  case saveError
-//}
+
+enum CommentError: Error {
+  //case contextError
+  case saveError
+}
+
 final class CommentInputViewModel: ObservableObject {
   
-  private let repository: CommentRepository
+  private let repository: any CommentRepository
   
   @Published var isSaving = false
   @Published var saveSuccess = false
@@ -237,7 +230,7 @@ final class CommentInputViewModel: ObservableObject {
     saveSuccess = false
     saveError = nil
     
-    let newComment = Comment(
+    let newComment = CommentModel(
       movieID: movie.id,
       movieTitle: movie.title,
       moviePosterURL: movie.posterURL,
@@ -246,11 +239,11 @@ final class CommentInputViewModel: ObservableObject {
       timestamp: Date()
     )
     
-
+    
     
     repository.saveComment(comment: newComment) { [weak self] result in
       DispatchQueue.main.async {
-        guard let self = self else { return }
+        guard let self else { return }
         self.isSaving = false
         
         switch result {
@@ -265,7 +258,6 @@ final class CommentInputViewModel: ObservableObject {
   }
   
   func loadComment(movieID: Int) {
-    
     if let commentData = repository.fetchComment(by: movieID) {
       self.commentText = commentData.userComment
     } else {
