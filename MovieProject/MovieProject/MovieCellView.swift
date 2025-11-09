@@ -25,17 +25,18 @@ struct MovieCellView: View {
       }
       .frame(width: 100, height: 130)
       .clipped()
+      .accessibilityLabel("\(movie.title) 영화의 포스터입니다.")
       
       
       VStack(alignment: .leading) {
-        Text(movie.title).font(.title2).bold().padding(.bottom, 8)
+        Text(movie.title).font(.title2).bold().padding(.bottom, 8).accessibilityAddTraits(.isHeader)
         Text(movie.overview)
           .font(.callout)
           .padding(.bottom, 8)
           .lineLimit(3)
-        Text("개봉일: \(movie.releaseDate)").font(.callout)
+        Text("개봉일: \(movie.releaseDate)").font(.callout).accessibilityLabel("개봉일 \(movie.releaseDate)")
       }
       .padding(.leading, 12)
-    }
+    }.accessibilityElement(children: .combine)
   }
 }
